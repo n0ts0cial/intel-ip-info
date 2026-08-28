@@ -2,6 +2,10 @@
 
 This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data with threat reputation intelligence collected from AbuseIPDB.
 
+| IP ADDRESS | ABUSE CONFIDENCE SCORE |
+| :--- | :--- |
+| 103.28.52.93 | 9% |
+
 ---
 ## IP Information
 This section details the core geolocation, network routing, and administrative parameters associated with the target infrastructure.
@@ -68,17 +72,23 @@ This section itemizes historical attack telemetry, specific log comments, and re
 
 ---
 **Reported At:** 08/18/2026 22:00:15
+
 **Comment:** 2026-08-18 16:00:07,147 fail2ban.actions        [39175]: NOTICE  [tor] Ban 103.28.52.93
 2026-08-18 18:00:19,639 fail2ban.actions        [39175]: NOTICE  [tor] Ban 103.28.52.93
 2026-08-18 20:01:02,137 fail2ban.actions        [39175]: NOTICE  [tor] Ban 103.28.52.93
 2026-08-18 23:00:02,481 fail2ban.actions        [39175]: NOTICE  [tor] Ban 103.28.52.93
 2026-08-19 01:00:12,488 fail2ban.actions        [39175]: NOTICE  [tor] Ban 103.28.52.93
+
 **Categories:** 18
+
 **Reporter Country:** Germany (DE)
 
 ---
 **Reported At:** 07/17/2026 18:26:19
+
 **Comment:** Auto-blocked by IT Solutions USA security proxy after malicious web-shell/backdoor scanning and attack probes. Requests blocked (403).
+
 **Categories:** 21, 15, 19
+
 **Reporter Country:** United States of America (US)
 
