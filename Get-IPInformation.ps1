@@ -327,7 +327,9 @@ try {
         }
 
         $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
-        Write-Host "SUCCESS: Markdown report generated at $MarkdownPath" -ForegroundColor Green
+        
+        $msg = "SUCCESS: Markdown report generated at {0}" -f $MarkdownPath
+        Write-Host $msg -ForegroundColor Green
     }
     catch {
         Write-Error "FILE SYSTEM ERROR: Failed to create or write the markdown report file. Details: $_"
