@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Retrieves IP address information from target_ip.txt and full reputation details using ipapi.co and AbuseIPDB services, and generates a structured Markdown report.
+    Retrieves IP address information from target_ip.txt and full reputation details using ipapi.co and AbuseIPDB services, with robust error handling, and generates a structured Markdown report.
 .PARAMETER AbuseIPDBKey
     Your AbuseIPDB API key.
 #>
@@ -14,121 +14,176 @@ param(
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 try {
-    # Read target IP from target_ip.txt file in the repository root
+    # 1. File Validation
     $TargetIpFile = Join-Path -Path $PSScriptRoot -ChildPath "target_ip.txt"
     
     if (-not (Test-Path -Path $TargetIpFile)) {
-        throw "The file 'target_ip.txt' was not found in the repository root."
+        Write-Error "CRITICAL: The file 'target_ip.txt' was not found in the repository root. Please ensure the file exists."
+        exit 1
     }
 
-    $IPAddress = (Get-Content -Path $TargetIpFile -Raw).Trim()
+    # Read all lines cleanly, filtering out empty ones or whitespace-only lines
+    $fileLines = Get-Content -Path $TargetIpFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 
-    if ([string]::IsNullOrEmpty($IPAddress)) {
-        throw "The 'target_ip.txt' file is empty."
+    if ($fileLines.Count -eq 0) {
+        Write-Error "CRITICAL: The 'target_ip.txt' file is empty. Please provide a valid target IP address."
+        exit 1
     }
 
-    Write-Host "Target IP loaded from file: $IPAddress" -ForegroundColor Cyan
+    if ($fileLines.Count -gt 1) {
+        Write-Error "CRITICAL: Multiple entries detected in 'target_ip.txt'. The file must contain strictly one single IP address."
+        exit 1
+    }
 
-    # Resolve ipapi.co using Cloudflare DoH to bypass local DNS issues
-    $dohUri = "https://cloudflare-dns.com/dns-query?name=ipapi.co&type=A"
-    $dohResponse = Invoke-RestMethod -Uri $dohUri -Headers @{ Accept = "application/dns-json" } -Method Get -ErrorAction Stop
+    $IPAddress = $fileLines[0].Trim()
+
+    # 2. IP Format Validation (IPv4 / IPv6 regex check)
+    $ipRegex = '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,7}:|([0-9a-fA-F]{1,4}){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:(:[0-9a-fA-F]{1,4}){1,7}|fe80:(:[0-9a-fA-F]{1,4}){0,4}%[0-9a-fA-F]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])|([0-9a-fA-F]{1,4}){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9]))$'
+
+    if ($IPAddress -notmatch $ipRegex) {
+        Write-Error "CRITICAL: The content '$IPAddress' in 'target_ip.txt' is not a valid IP address format."
+        exit 1
+    }
+
+    Write-Host "Target IP validated successfully from file: $IPAddress" -ForegroundColor Cyan
+
+    # 3. Connectivity Check (Cloudflare DoH & ipapi.co)
+    try {
+        $dohUri = "https://cloudflare-dns.com/dns-query?name=ipapi.co&type=A"
+        $dohResponse = Invoke-RestMethod -Uri $dohUri -Headers @{ Accept = "application/dns-json" } -Method Get -ErrorAction Stop
+    }
+    catch {
+        Write-Error "CRITICAL CONNECTIVITY ERROR: Failed to reach Cloudflare DoH service for DNS resolution. Check network connection or firewall rules. Details: $_"
+        exit 1
+    }
     
     $resolvedIp = $dohResponse.Answer | Where-Object { $_.type -eq 1 } | Select-Object -ExpandProperty data -First 1
 
     if (-not $resolvedIp) {
-        throw "Could not resolve IP for ipapi.co via DoH."
+        Write-Error "CRITICAL RESOLUTION ERROR: Could not resolve IP address for ipapi.co via DNS-over-HTTPS."
+        exit 1
     }
 
-    $uri = "https://$resolvedIp/$IPAddress/json/"
-    $response = Invoke-RestMethod -Uri $uri -Headers @{ Host = "ipapi.co" } -Method Get -UserAgent "PowerShellScript" -ErrorAction Stop
-
-    if ($response.error -ne $true -and -not [string]::IsNullOrEmpty($response.ip)) {
-        
-        $targetIp = $response.ip
-        $abuseData = $null
-
-        if (-not [string]::IsNullOrEmpty($AbuseIPDBKey)) {
-            try {
-                $abuseUri = "https://api.abuseipdb.com/api/v2/check?ipAddress=$targetIp&maxAgeInDays=90&verbose=true"
-                $abuseHeaders = @{
-                    "Key"    = $AbuseIPDBKey
-                    "Accept" = "application/json"
-                }
-                $abuseResponse = Invoke-RestMethod -Uri $abuseUri -Headers $abuseHeaders -Method Get -ErrorAction Stop
-                $abuseData = $abuseResponse.data
-            }
-            catch {
-                Write-Warning "Failed to retrieve reputation from AbuseIPDB: $_"
-            }
-        }
-
-        $confidenceScoreFormatted = if ($null -ne $abuseData.abuseConfidenceScore) { "$($abuseData.abuseConfidenceScore)%" } else { "N/A" }
-
-        $ipInfo = [PSCustomObject]@{
-            IP               = $targetIp
-            City             = $response.city
-            Region           = $response.region
-            RegionCode       = $response.region_code
-            CountryName      = $response.country_name
-            CountryCode      = $response.country_code
-            Postal           = $response.postal
-            Latitude         = $response.latitude
-            Longitude        = $response.longitude
-            Timezone         = $response.timezone
-            ContinentCode    = $response.continent_code
-            ASN              = $response.asn
-            Organization     = $response.org
-        }
-
-        $abuseReputation = [PSCustomObject]@{
-            IP                    = $targetIp
-            AbuseIsPublic         = $abuseData.isPublic
-            AbuseIpVersion        = $abuseData.ipVersion
-            AbuseIsWhitelisted    = $abuseData.isWhitelisted
-            AbuseConfidenceScore  = $confidenceScoreFormatted
-            AbuseUsageType        = $abuseData.usageType
-            AbuseIsp              = $abuseData.isp
-            AbuseDomain           = $abuseData.domain
-            AbuseHostnames        = $abuseData.hostnames
-            AbuseIsTor            = $abuseData.isTor
-            AbuseTotalReports     = $abuseData.totalReports
-            AbuseNumDistinctUsers = $abuseData.numDistinctUsers
-            AbuseLastReportedAt   = $abuseData.lastReportedAt
-        }
-
-        $reportsArray = if ($abuseData.reports) {
-            $abuseData.reports | ForEach-Object {
-                [PSCustomObject]@{
-                    IP                  = $targetIp
-                    ReportedAt          = $_.reportedAt
-                    Comment             = $_.comment
-                    Categories          = $_.categories
-                    ReporterId          = $_.reporterId
-                    ReporterCountryCode = $_.reporterCountryCode
-                    ReporterCountryName = $_.reporterCountryName
-                }
-            }
+    try {
+        $uri = "https://$resolvedIp/$IPAddress/json/"
+        $response = Invoke-RestMethod -Uri $uri -Headers @{ Host = "ipapi.co" } -Method Get -UserAgent "PowerShellScript" -ErrorAction Stop
+    }
+    catch {
+        $statusCode = $_.Exception.Response.StatusCode.value__
+        if ($statusCode -eq 429) {
+            Write-Error "API RATE LIMIT ERROR: Rate limit exceeded on ipapi.co service (HTTP 429). Too many requests."
         } else {
-            [PSCustomObject]@{
-                IP      = $targetIp
-                Message = "No reports available or key not provided."
+            Write-Error "CRITICAL CONNECTIVITY ERROR: Failed to connect or retrieve data from ipapi.co. HTTP Status: $statusCode. Details: $_"
+        }
+        exit 1
+    }
+
+    if ($response.error -eq $true) {
+        Write-Error "API SERVICE ERROR: ipapi.co returned an error response for target IP '$IPAddress'. Reason: $($response.reason)"
+        exit 1
+    }
+
+    if ([string]::IsNullOrEmpty($response.ip)) {
+        Write-Error "API DATA ERROR: ipapi.co returned an empty IP payload."
+        exit 1
+    }
+        
+    $targetIp = $response.ip
+    $abuseData = $null
+
+    # 4. AbuseIPDB Service Handling
+    if ([string]::IsNullOrEmpty($AbuseIPDBKey)) {
+        Write-Warning "API MISSING WARNING: AbuseIPDB API key (TMP_API_KEY) is missing. Skipping threat reputation checks."
+    } else {
+        try {
+            $abuseUri = "https://api.abuseipdb.com/api/v2/check?ipAddress=$targetIp&maxAgeInDays=90&verbose=true"
+            $abuseHeaders = @{
+                "Key"    = $AbuseIPDBKey
+                "Accept" = "application/json"
+            }
+            $abuseResponse = Invoke-RestMethod -Uri $abuseUri -Headers $abuseHeaders -Method Get -ErrorAction Stop
+            $abuseData = $abuseResponse.data
+        }
+        catch {
+            $statusCode = $_.Exception.Response.StatusCode.value__
+            if ($statusCode -eq 401 -or $statusCode -eq 403) {
+                Write-Error "API AUTHORIZATION ERROR: Authentication failed for AbuseIPDB (HTTP $statusCode). Please verify if your API key is valid and active."
+            } elseif ($statusCode -eq 429) {
+                Write-Error "API RATE LIMIT ERROR: AbuseIPDB daily rate limit or query quota has been exceeded (HTTP 429)."
+            } else {
+                Write-Warning "API CONNECTIVITY WARNING: Failed to retrieve reputation telemetry from AbuseIPDB. HTTP Status: $statusCode. Details: $_"
             }
         }
+    }
 
-        # Console Output
-        Write-Host "`n=== IP INFORMATION ===" -ForegroundColor Cyan
-        $ipInfo | Format-List
+    $confidenceScoreFormatted = if ($null -ne $abuseData.abuseConfidenceScore) { "$($abuseData.abuseConfidenceScore)%" } else { "N/A" }
 
-        Write-Host "=== ABUSE REPUTATION ===" -ForegroundColor Cyan
-        $abuseReputation | Format-List
+    $ipInfo = [PSCustomObject]@{
+        IP               = $targetIp
+        City             = $response.city
+        Region           = $response.region
+        RegionCode       = $response.region_code
+        CountryName      = $response.country_name
+        CountryCode      = $response.country_code
+        Postal           = $response.postal
+        Latitude         = $response.latitude
+        Longitude        = $response.longitude
+        Timezone         = $response.timezone
+        ContinentCode    = $response.continent_code
+        ASN              = $response.asn
+        Organization     = $response.org
+    }
 
-        Write-Host "=== ABUSE REPORTS ===" -ForegroundColor Cyan
-        $reportsArray | Format-List
+    $abuseReputation = [PSCustomObject]@{
+        IP                    = $targetIp
+        AbuseIsPublic         = $abuseData.isPublic
+        AbuseIpVersion        = $abuseData.ipVersion
+        AbuseIsWhitelisted    = $abuseData.isWhitelisted
+        AbuseConfidenceScore  = $confidenceScoreFormatted
+        AbuseUsageType        = $abuseData.usageType
+        AbuseIsp              = $abuseData.isp
+        AbuseDomain           = $abuseData.domain
+        AbuseHostnames        = $abuseData.hostnames
+        AbuseIsTor            = $abuseData.isTor
+        AbuseTotalReports     = $abuseData.totalReports
+        AbuseNumDistinctUsers = $abuseData.numDistinctUsers
+        AbuseLastReportedAt   = $abuseData.lastReportedAt
+    }
 
-        # Markdown Generation
+    $reportsArray = if ($abuseData.reports) {
+        $abuseData.reports | ForEach-Object {
+            [PSCustomObject]@{
+                IP                  = $targetIp
+                ReportedAt          = $_.reportedAt
+                Comment             = $_.comment
+                Categories          = $_.categories
+                ReporterId          = $_.reporterId
+                ReporterCountryCode = $_.reporterCountryCode
+                ReporterCountryName = $_.reporterCountryName
+            }
+        }
+    } else {
+        [PSCustomObject]@{
+            IP      = $targetIp
+            Message = "No reports available or key not provided."
+        }
+    }
+
+    # Console Output
+    Write-Host "`n=== IP INFORMATION ===" -ForegroundColor Cyan
+    $ipInfo | Format-List
+
+    Write-Host "=== ABUSE REPUTATION ===" -ForegroundColor Cyan
+    $abuseReputation | Format-List
+
+    Write-Host "=== ABUSE REPORTS ===" -ForegroundColor Cyan
+    $reportsArray | Format-List
+
+    # Markdown Generation
+    try {
         $ReportsFolder = Join-Path -Path $PSScriptRoot -ChildPath "reports"
         if (-not (Test-Path -Path $ReportsFolder)) {
-            New-Item -Path $ReportsFolder -ItemType Directory | Out-Null
+            New-Item -Path $ReportsFolder -ItemType Directory -ErrorAction Stop | Out-Null
         }
 
         $FileName = "IP-Report-$targetIp.md"
@@ -186,15 +241,15 @@ try {
             $Content.Add("No reports available or key not provided.")
         }
 
-        $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force
+        $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
         Write-Host "SUCCESS: Markdown report generated at $MarkdownPath" -ForegroundColor Green
-
-    } else {
-        Write-Warning "The query failed for IP: $IPAddress. Reason: $($response.reason)"
+    }
+    catch {
+        Write-Error "FILE SYSTEM ERROR: Failed to create or write the markdown report file. Details: $_"
         exit 1
     }
 }
 catch {
-    Write-Error "Error connecting to the API: $_"
+    Write-Error "UNEXPECTED EXECUTION ERROR: An unhandled exception occurred during script execution. Details: $_"
     exit 1
 }
