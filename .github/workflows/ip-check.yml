@@ -1,0 +1,36 @@
+name: Run IP Intelligence Check
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+        
+      - name: Run IP Intelligence Script
+        shell: pwsh
+        run: |
+          . ./Get-IPInformation.ps1
+        env:
+          TMP_API_KEY: ${{ secrets.TMP_API_KEY }}
+
+      - name: Commit and Push Report
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add reports/*.md
+          
+          if git diff --cached --quiet; then
+            echo "No new reports found. Nothing to commit."
+          else
+            git commit -m "Publish automated IP intelligence report"
+            git push
+          fi
