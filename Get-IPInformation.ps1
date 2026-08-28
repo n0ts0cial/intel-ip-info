@@ -123,7 +123,7 @@ try {
         }
     }
 
-    # 5. Shodan Service Handling
+    # 5. Shodan Service Handling (Using the exact same pattern)
     if ([string]::IsNullOrEmpty($ShodanKey)) {
         Write-Host "Shodan API key (TMP_API_KEY_SHODAN) is missing or not provided. Skipping Shodan intelligence gathering." -ForegroundColor Yellow
     } else {
@@ -328,8 +328,7 @@ try {
 
         $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
         
-        #Write-Host "SUCCESS: Markdown report generated at " -NoNewline -ForegroundColor Green
-       # Write-Host $MarkdownPath -ForegroundColor Yellow
+        Write-Host "SUCCESS: Markdown report generated at $MarkdownPath" -ForegroundColor Green
     }
     catch {
         Write-Error "FILE SYSTEM ERROR: Failed to create or write the markdown report file. Details: $_"
