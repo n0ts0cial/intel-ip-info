@@ -1,18 +1,13 @@
 <#
 .SYNOPSIS
-    Retrieves IP address information from target_ip.txt, full reputation details using ipapi.co and AbuseIPDB, queries the Shodan API using the secret TMP_API_KEY_SHODAN, and generates a structured Markdown report.
+    Retrieves IP address information from target_ip.txt and full reputation details using ipapi.co and AbuseIPDB services, with robust error handling, and generates a structured Markdown report.
 .PARAMETER AbuseIPDBKey
     Your AbuseIPDB API key.
-.PARAMETER ShodanKey
-    Your Shodan API key.
 #>
 
 param(
     [Parameter(Mandatory=$false)]
-    [string]$AbuseIPDBKey = $env:TMP_API_KEY,
-
-    [Parameter(Mandatory=$false)]
-    [string]$ShodanKey = $env:TMP_API_KEY_SHODAN
+    [string]$AbuseIPDBKey = $env:TMP_API_KEY
 )
 
 # Ensure TLS 1.2 is enabled
@@ -96,7 +91,6 @@ try {
         
     $targetIp = $response.ip
     $abuseData = $null
-    $shodanData = $null
 
     # 4. AbuseIPDB Service Handling
     if ([string]::IsNullOrEmpty($AbuseIPDBKey)) {
@@ -119,28 +113,6 @@ try {
                 Write-Error "API RATE LIMIT ERROR: AbuseIPDB daily rate limit or query quota has been exceeded (HTTP 429)."
             } else {
                 Write-Warning "API CONNECTIVITY WARNING: Failed to retrieve reputation telemetry from AbuseIPDB. HTTP Status: $statusCode. Details: $_"
-            }
-        }
-    }
-
-    # 5. Shodan Service Handling
-    if ([string]::IsNullOrEmpty($ShodanKey)) {
-        Write-Warning "API MISSING WARNING: Shodan API key (TMP_API_KEY_SHODAN) is missing. Skipping Shodan intelligence gathering."
-    } else {
-        try {
-            $shodanUri = "https://api.shodan.io/shodan/host/$targetIp?key=$ShodanKey"
-            $shodanData = Invoke-RestMethod -Uri $shodanUri -Method Get -ErrorAction Stop
-        }
-        catch {
-            $statusCode = $_.Exception.Response.StatusCode.value__
-            if ($statusCode -eq 401 -or $statusCode -eq 403) {
-                Write-Error "API AUTHORIZATION ERROR: Authentication failed for Shodan (HTTP $statusCode). Please verify if your API key is valid and active."
-            } elseif ($statusCode -eq 429) {
-                Write-Error "API RATE LIMIT ERROR: Shodan query quota/rate limit has been exceeded (HTTP 429)."
-            } elseif ($statusCode -eq 404) {
-                Write-Warning "Shodan notice: No information available for IP $targetIp in Shodan database."
-            } else {
-                Write-Warning "API CONNECTIVITY WARNING: Failed to retrieve telemetry from Shodan API. HTTP Status: $statusCode. Details: $_"
             }
         }
     }
@@ -208,17 +180,6 @@ try {
     Write-Host "=== ABUSE REPORTS ===" -ForegroundColor Cyan
     $reportsArray | Format-List
 
-    if ($null -ne $shodanData) {
-        Write-Host "=== SHODAN INTELLIGENCE ===" -ForegroundColor Cyan
-        [PSCustomObject]@{
-            IP              = $targetIp
-            Ports           = ($shodanData.ports -join ', ')
-            Hostnames       = ($shodanData.hostnames -join ', ')
-            OS              = $shodanData.os
-            Vulnerabilities = if ($shodanData.vulns) { ($shodanData.vulns -join ', ') } else { "None listed" }
-        } | Format-List
-    }
-
     # Markdown Generation
     try {
         $ReportsFolder = Join-Path -Path $PSScriptRoot -ChildPath "reports"
@@ -279,22 +240,6 @@ try {
             }
         } else {
             $Content.Add("No reports available or key not provided.")
-        }
-
-        # Section 4 Markdown: Shodan Intelligence (Appended cleanly at the end)
-        if ($null -ne $shodanData) {
-            $Content.Add("---")
-            $Content.Add("## Shodan Intelligence")
-            $Content.Add("This section summarizes internet-facing services, open ports, exposed hostnames, operating system indicators, and vulnerabilities discovered via Shodan telemetry.")
-            $Content.Add("")
-            $Content.Add("**Open Ports:** " + $(if ($shodanData.ports) { $shodanData.ports -join ', ' } else { "N/A" }))
-            $Content.Add("")
-            $Content.Add("**Hostnames:** " + $(if ($shodanData.hostnames) { $shodanData.hostnames -join ', ' } else { "N/A" }))
-            $Content.Add("")
-            $Content.Add("**Operating System:** " + $(if ($shodanData.os) { $shodanData.os } else { "N/A" }))
-            $Content.Add("")
-            $Content.Add("**Vulnerabilities:** " + $(if ($shodanData.vulns) { $shodanData.vulns -join ', ' } else { "None listed" }))
-            $Content.Add("")
         }
 
         $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
