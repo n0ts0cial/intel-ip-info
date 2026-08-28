@@ -328,8 +328,8 @@ try {
 
         $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
         
-        Write-Host "SUCCESS: Markdown report generated at " -NoNewline -ForegroundColor Green
-        Write-Host $MarkdownPath -ForegroundColor Yellow
+        #Write-Host "SUCCESS: Markdown report generated at " -NoNewline -ForegroundColor Green
+       # Write-Host $MarkdownPath -ForegroundColor Yellow
     }
     catch {
         Write-Error "FILE SYSTEM ERROR: Failed to create or write the markdown report file. Details: $_"
