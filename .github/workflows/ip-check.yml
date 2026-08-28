@@ -16,11 +16,11 @@ jobs:
         
       - name: Run IP Intelligence Script
         shell: pwsh
-        run: |
-          . ./Get-IPInformation.ps1
         env:
           TMP_API_KEY: ${{ secrets.TMP_API_KEY }}
           TMP_API_KEY_SHODAN: ${{ secrets.TMP_API_KEY_SHODAN }}
+        run: |
+          . ./Get-IPInformation.ps1
 
       - name: Commit and Push Report
         run: |
