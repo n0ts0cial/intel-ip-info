@@ -62,7 +62,7 @@ try {
             }
         }
 
-        $confidenceScoreFormatted = if ($null -ne $abuseData.abuseConfidenceScore) { "$($abuseData.abuseConfidenceScore)%" } else { $null }
+        $confidenceScoreFormatted = if ($null -ne $abuseData.abuseConfidenceScore) { "$($abuseData.abuseConfidenceScore)%" } else { "N/A" }
 
         $ipInfo = [PSCustomObject]@{
             IP               = $targetIp
@@ -139,6 +139,10 @@ try {
         $Content.Add("# IP Intelligence Report: $targetIp")
         $Content.Add("")
         $Content.Add("This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data with threat reputation intelligence collected from AbuseIPDB.")
+        $Content.Add("")
+        $Content.Add("| IP ADDRESS | ABUSE CONFIDENCE SCORE |")
+        $Content.Add("| :--- | :--- |")
+        $Content.Add("| $targetIp | $confidenceScoreFormatted |")
         $Content.Add("")
 
         # Section 1 Markdown
