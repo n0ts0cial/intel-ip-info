@@ -147,9 +147,9 @@ try {
         $Content.Add("This section details the core geolocation, network routing, and administrative parameters associated with the target infrastructure.")
         $Content.Add("")
         foreach ($prop in $ipInfo.PSObject.Properties) {
-            $Content.Add("* **$($prop.Name):** $($prop.Value)")
+            $Content.Add("**$($prop.Name):** $($prop.Value)")
+            $Content.Add("")
         }
-        $Content.Add("")
 
         # Section 2 Markdown
         $Content.Add("---")
@@ -157,9 +157,9 @@ try {
         $Content.Add("This section outlines threat intelligence telemetry, confidence scores, and usage classifications to determine the risk posture of the host.")
         $Content.Add("")
         foreach ($prop in $abuseReputation.PSObject.Properties) {
-            $Content.Add("* **$($prop.Name):** $($prop.Value)")
+            $Content.Add("**$($prop.Name):** $($prop.Value)")
+            $Content.Add("")
         }
-        $Content.Add("")
 
         # Section 3 Markdown
         $Content.Add("---")
@@ -169,10 +169,10 @@ try {
         if ($abuseData.reports) {
             foreach ($rep in $reportsArray) {
                 $Content.Add("---")
-                $Content.Add("* **Reported At:** $($rep.ReportedAt)")
-                $Content.Add("* **Comment:** $($rep.Comment)")
-                $Content.Add("* **Categories:** $($rep.Categories -join ', ')")
-                $Content.Add("* **Reporter Country:** $($rep.ReporterCountryName) ($($rep.ReporterCountryCode))")
+                $Content.Add("**Reported At:** $($rep.ReportedAt)")
+                $Content.Add("**Comment:** $($rep.Comment)")
+                $Content.Add("**Categories:** $($rep.Categories -join ', ')")
+                $Content.Add("**Reporter Country:** $($rep.ReporterCountryName) ($($rep.ReporterCountryCode))")
                 $Content.Add("")
             }
         } else {
