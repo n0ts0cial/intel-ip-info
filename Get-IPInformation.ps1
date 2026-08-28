@@ -141,24 +141,27 @@ try {
         $Content.Add("This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data with threat reputation intelligence collected from AbuseIPDB.")
         $Content.Add("")
 
+        # Section 1 Markdown
         $Content.Add("---")
         $Content.Add("## IP Information")
         $Content.Add("This section details the core geolocation, network routing, and administrative parameters associated with the target infrastructure.")
         $Content.Add("")
         foreach ($prop in $ipInfo.PSObject.Properties) {
-            $Content.Add("**$($prop.Name):** $($prop.Value)")
+            $Content.Add("* **$($prop.Name):** $($prop.Value)")
         }
         $Content.Add("")
 
+        # Section 2 Markdown
         $Content.Add("---")
         $Content.Add("## Abuse Reputation")
         $Content.Add("This section outlines threat intelligence telemetry, confidence scores, and usage classifications to determine the risk posture of the host.")
         $Content.Add("")
         foreach ($prop in $abuseReputation.PSObject.Properties) {
-            $Content.Add("**$($prop.Name):** $($prop.Value)")
+            $Content.Add("* **$($prop.Name):** $($prop.Value)")
         }
         $Content.Add("")
 
+        # Section 3 Markdown
         $Content.Add("---")
         $Content.Add("## Abuse Reports")
         $Content.Add("This section itemizes historical attack telemetry, specific log comments, and reporter attributes recorded against the target IP address.")
@@ -166,10 +169,11 @@ try {
         if ($abuseData.reports) {
             foreach ($rep in $reportsArray) {
                 $Content.Add("---")
-                $Content.Add("**Reported At:** $($rep.ReportedAt)")
-                $Content.Add("**Comment:** $($rep.Comment)")
-                $Content.Add("**Categories:** $($rep.Categories -join ', ')")
-                $Content.Add("**Reporter Country:** $($rep.ReporterCountryName) ($($rep.ReporterCountryCode))")
+                $Content.Add("* **Reported At:** $($rep.ReportedAt)")
+                $Content.Add("* **Comment:** $($rep.Comment)")
+                $Content.Add("* **Categories:** $($rep.Categories -join ', ')")
+                $Content.Add("* **Reporter Country:** $($rep.ReporterCountryName) ($($rep.ReporterCountryCode))")
+                $Content.Add("")
             }
         } else {
             $Content.Add("No reports available or key not provided.")
