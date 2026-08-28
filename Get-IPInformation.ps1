@@ -212,10 +212,10 @@ try {
     if ($null -ne $shodanData) {
         Write-Host "=== SHODAN INTELLIGENCE ===" -ForegroundColor Cyan
         [PSCustomObject]@{
-            IP          = $targetIp
-            Ports       = ($shodanData.ports -join ', ')
-            Hostnames   = ($shodanData.hostnames -join ', ')
-            OS          = $shodanData.os
+            IP              = $targetIp
+            Ports           = ($shodanData.ports -join ', ')
+            Hostnames       = ($shodanData.hostnames -join ', ')
+            OS              = $shodanData.os
             Vulnerabilities = if ($shodanData.vulns) { ($shodanData.vulns -join ', ') } else { "None listed" }
         } | Format-List
     }
