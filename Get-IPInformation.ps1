@@ -170,8 +170,11 @@ try {
             foreach ($rep in $reportsArray) {
                 $Content.Add("---")
                 $Content.Add("**Reported At:** $($rep.ReportedAt)")
+                $Content.Add("")
                 $Content.Add("**Comment:** $($rep.Comment)")
+                $Content.Add("")
                 $Content.Add("**Categories:** $($rep.Categories -join ', ')")
+                $Content.Add("")
                 $Content.Add("**Reporter Country:** $($rep.ReporterCountryName) ($($rep.ReporterCountryCode))")
                 $Content.Add("")
             }
