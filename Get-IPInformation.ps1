@@ -22,20 +22,21 @@ try {
         exit 1
     }
 
-    # Read all lines cleanly, filtering out empty ones or whitespace-only lines
-    $fileLines = Get-Content -Path $TargetIpFile | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    # Read raw content to check line counts safely
+    $rawContent = Get-Content -Path $TargetIpFile
+    $nonEmptyLines = @($rawContent | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
 
-    if ($fileLines.Count -eq 0) {
+    if ($nonEmptyLines.Count -eq 0) {
         Write-Error "CRITICAL: The 'target_ip.txt' file is empty. Please provide a valid target IP address."
         exit 1
     }
 
-    if ($fileLines.Count -gt 1) {
+    if ($nonEmptyLines.Count -gt 1) {
         Write-Error "CRITICAL: Multiple entries detected in 'target_ip.txt'. The file must contain strictly one single IP address."
         exit 1
     }
 
-    $IPAddress = $fileLines[0].Trim()
+    $IPAddress = [string]$nonEmptyLines[0].Trim()
 
     # 2. IP Format Validation (IPv4 / IPv6 regex check)
     $ipRegex = '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,7}:|([0-9a-fA-F]{1,4}){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:(:[0-9a-fA-F]{1,4}){1,7}|fe80:(:[0-9a-fA-F]{1,4}){0,4}%[0-9a-fA-F]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])|([0-9a-fA-F]{1,4}){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9]))$'
