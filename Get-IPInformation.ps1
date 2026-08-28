@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Retrieves IP address information from target_ip.txt, full reputation details using ipapi.co and AbuseIPDB, optional Shodan intelligence, and generates a structured Markdown report.
+    Retrieves IP address information from target_ip.txt, full reputation details using ipapi.co and AbuseIPDB, queries the Shodan API using the secret TMP_API_KEY_SHODAN, and generates a structured Markdown report.
 .PARAMETER AbuseIPDBKey
     Your AbuseIPDB API key.
 .PARAMETER ShodanKey
@@ -123,14 +123,13 @@ try {
         }
     }
 
-    # 5. Shodan Service Handling (Using the exact same pattern)
+    # 5. Shodan Service Handling
     if ([string]::IsNullOrEmpty($ShodanKey)) {
-        Write-Host "Shodan API key (TMP_API_KEY_SHODAN) is missing or not provided. Skipping Shodan intelligence gathering." -ForegroundColor Yellow
+        Write-Warning "API MISSING WARNING: Shodan API key (TMP_API_KEY_SHODAN) is missing. Skipping Shodan intelligence gathering."
     } else {
         try {
             $shodanUri = "https://api.shodan.io/shodan/host/$targetIp?key=$ShodanKey"
             $shodanData = Invoke-RestMethod -Uri $shodanUri -Method Get -ErrorAction Stop
-            Write-Host "Successfully retrieved Shodan intelligence for target IP." -ForegroundColor Green
         }
         catch {
             $statusCode = $_.Exception.Response.StatusCode.value__
@@ -282,52 +281,23 @@ try {
             $Content.Add("No reports available or key not provided.")
         }
 
-        # Section 4 Markdown: Shodan Intelligence (Conditional)
+        # Section 4 Markdown: Shodan Intelligence (Appended cleanly at the end)
         if ($null -ne $shodanData) {
             $Content.Add("---")
             $Content.Add("## Shodan Intelligence")
-            $Content.Add("This section highlights active open ports, exposed technologies, services, and associated vulnerabilities mapped by Shodan.")
+            $Content.Add("This section summarizes internet-facing services, open ports, exposed hostnames, operating system indicators, and vulnerabilities discovered via Shodan telemetry.")
             $Content.Add("")
-            
-            $shodanPorts = if ($shodanData.ports) { $shodanData.ports -join ', ' } else { "N/A" }
-            $shodanHostnames = if ($shodanData.hostnames) { $shodanData.hostnames -join ', ' } else { "N/A" }
-            $shodanOs = if ($shodanData.os) { $shodanData.os } else { "N/A" }
-            $shodanVulns = if ($shodanData.vulns) { $shodanData.vulns -join ', ' } else { "None listed" }
-
-            $Content.Add("**Open Ports:** $shodanPorts")
+            $Content.Add("**Open Ports:** " + $(if ($shodanData.ports) { $shodanData.ports -join ', ' } else { "N/A" }))
             $Content.Add("")
-            $Content.Add("**Hostnames:** $shodanHostnames")
+            $Content.Add("**Hostnames:** " + $(if ($shodanData.hostnames) { $shodanData.hostnames -join ', ' } else { "N/A" }))
             $Content.Add("")
-            $Content.Add("**Operating System:** $shodanOs")
+            $Content.Add("**Operating System:** " + $(if ($shodanData.os) { $shodanData.os } else { "N/A" }))
             $Content.Add("")
-            $Content.Add("**Vulnerabilities:** $shodanVulns")
+            $Content.Add("**Vulnerabilities:** " + $(if ($shodanData.vulns) { $shodanData.vulns -join ', ' } else { "None listed" }))
             $Content.Add("")
-
-            if ($shodanData.data) {
-                $Content.Add("### Detailed Service Banners")
-                $Content.Add("")
-                foreach ($service in $shodanData.data) {
-                    $bannerPort = $service.port
-                    $bannerTransport = $service.transport
-                    $bannerProduct = if ($service.product) { $service.product } else { "Unknown Product" }
-                    $bannerVersion = if ($service.version) { $service.version } else { "" }
-                    
-                    $Content.Add("---")
-                    $Content.Add("**Port/Protocol:** $bannerPort/$bannerTransport")
-                    $Content.Add("")
-                    $Content.Add("**Technology/Product:** $bannerProduct $bannerVersion")
-                    $Content.Add("")
-                    if ($service.banner) {
-                        $cleanedBanner = $service.banner -replace "`r`n", " " -replace "`n", " "
-                        $Content.Add("**Banner Snippet:** ```$cleanedBanner```")
-                        $Content.Add("")
-                    }
-                }
-            }
         }
 
         $Content | Out-File -FilePath $MarkdownPath -Encoding utf8 -Force -ErrorAction Stop
-        
         Write-Host "SUCCESS: Markdown report generated at $MarkdownPath" -ForegroundColor Green
     }
     catch {
