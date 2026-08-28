@@ -68,25 +68,37 @@ This section itemizes historical attack telemetry, specific log comments, and re
 
 ---
 **Reported At:** 07/18/2026 05:31:39
+
 **Comment:** denied traffic to a honeypot network. destination port 2222.
+
 **Categories:** 14, 15
+
 **Reporter Country:** Germany (DE)
 
 ---
 **Reported At:** 06/06/2026 20:33:12
+
 **Comment:** Unauthorized connection attempt
+
 **Categories:** 14, 15, 20
+
 **Reporter Country:** Germany (DE)
 
 ---
 **Reported At:** 06/06/2026 01:18:10
+
 **Comment:** Unsolicited TCP traffic | Action: DROP | Port 2222
+
 **Categories:** 18
+
 **Reporter Country:** Netherlands (NL)
 
 ---
 **Reported At:** 06/05/2026 00:09:41
+
 **Comment:** Unauthorized connection attempt
+
 **Categories:** 14, 15, 20
+
 **Reporter Country:** Germany (DE)
 
