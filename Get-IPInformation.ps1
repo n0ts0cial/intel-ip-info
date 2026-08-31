@@ -41,7 +41,9 @@ function Get-TargetIPAddress {
     }
 
     $IPAddress = [string]$nonEmptyLines[0].Trim()
-    $ipRegex = '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,7}:|([0-9a-fA-F]{1,4}){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:(:[0-9a-fA-F]{1,4}){1,7}|fe80:(:[0-9a-fA-F]{1,4}){0,4}%[0-9a-fA-F]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])|([0-9a-fA-F]{1,4}){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9]))$'
+    
+    # Updated comprehensive regex supporting both IPv4 and fully/compactly written IPv6 addresses
+    $ipRegex = '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:(:[0-9a-fA-F]{1,4}){1,7}|::((:[0-9a-fA-F]{1,4}){0,6})?|([0-9a-fA-F]{1,4}::([0-9a-fA-F]{1,4}){0,5})|fe80:(:[0-9a-fA-F]{1,4}){0,4}%[0-9a-fA-F]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])|([0-9a-fA-F]{1,4}){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9]))$'
 
     if ($IPAddress -notmatch $ipRegex) {
         Write-Error "CRITICAL: The content '$IPAddress' in 'target_ip.txt' is not a valid IP address format."
@@ -346,7 +348,9 @@ try {
             New-Item -Path $ReportsFolder -ItemType Directory -ErrorAction Stop | Out-Null
         }
 
-        $FileName = "IP-Report-$targetIp.md"
+        # Safely handle IPv6 addresses for Windows filesystems
+        $SafeTargetIp = $targetIp -replace ':', '-'
+        $FileName = "IP-Report-$SafeTargetIp.md"
         $MarkdownPath = Join-Path -Path $ReportsFolder -ChildPath $FileName
 
         $Content = New-Object System.Collections.Generic.List[string]
