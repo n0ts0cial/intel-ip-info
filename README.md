@@ -4,7 +4,7 @@ Automated Threat Intelligence pipeline that queries existing telemetry for targe
 
 ## 🚀 Overview
 
-This project provides an automated intelligence workflow for target IP analysis. Whenever a target IP address is updated, a GitHub Action triggers a PowerShell script that:
+This project provides an automated intelligence workflow for target IP analysis designed to run natively via GitHub Actions. Whenever a target IP address is updated, the pipeline automatically executes a PowerShell script that:
 
 1. **Reads** the target IPv4 or IPv6 address from `target_ip.txt`.
 2. **Queries** infrastructure geolocation and routing data via `ipapi.co`.
@@ -20,44 +20,42 @@ This project provides an automated intelligence workflow for target IP analysis.
 - **Data Sources:** ipapi.co, AbuseIPDB, Shodan, & NIST NVD API
 - **Output:** Markdown (.md) reports
 
+## ⚙️ Configuration & Setup
+
+To operate this intelligence pipeline, clone this repository and configure the required repository secrets for API authentication:
+
+### Repository Secrets
+
+Navigate to your GitHub repository settings under **Settings > Secrets and variables > Actions** and add the following secrets:
+
+* `TMP_API_KEY`: Your AbuseIPDB API key.
+* `TMP_API_KEY_SHODAN`: Your Shodan API key.
+
 ## 📖 Usage
 
-### Local Execution
+1. Edit the `target_ip.txt` file at the root of the repository with your target IPv4 or IPv6 address.
+2. Commit and push the changes to your repository.
+3. The GitHub Actions pipeline will automatically execute, generate the threat report, and commit it back to the `reports/` folder.
+4. Alternatively, you can trigger the workflow manually at any time via **Actions > Run Workflow**.
 
-To run the intelligence check locally, ensure your API keys are set as environment variables (`TMP_API_KEY` for AbuseIPDB and `TMP_API_KEY_SHODAN` for Shodan), place your target IP inside `target_ip.txt`, and execute:
+## 📋 Report Structure
 
-```
-./Get-IPInformation.ps1
-```
+Each generated report includes infrastructure parameters, abuse reputation statistics, and a structured **Vulnerabilities Summary** table alongside detailed technical breakdowns:
 
-Automated Trigger
-Edit the target_ip.txt file at the root of the repository with your target IPv4 or IPv6 address.
+- **IP Information:** Geolocation, ASN, organization, and time zone details.
+- **Abuse Reputation:** Abuse confidence score, total reports, whitelist status, and usage type.
+- **Shodan Telemetry:** Open ports, exposed services, operating systems, and hostnames.
+- **Vulnerabilities Summary:** Total count, severity breakdown (Critical, High, Medium, Low), and public exploit indicators.
+- **Vulnerabilities Details:** CVE ID, base severity, CVSS scores, exploitability metrics, detailed description, and NIST references.
 
-Commit and push the changes to your repository.
+## 🤖 Automation Schedule
 
-The GitHub Actions pipeline will automatically execute, generate the threat report, and commit it back to the reports/ folder.
-
-📋 Report Structure
-Each generated report includes infrastructure parameters, abuse reputation statistics, and a structured Vulnerabilities Summary table alongside detailed technical breakdowns:
-
-IP Information: Geolocation, ASN, organization, and time zone details.
-
-Abuse Reputation: Abuse confidence score, total reports, whitelist status, and usage type.
-
-Shodan Telemetry: Open ports, exposed services, operating systems, and hostnames.
-
-Vulnerabilities Summary: Total count, severity breakdown (Critical, High, Medium, Low), and public exploit indicators.
-
-Vulnerabilities Details: CVE ID, base severity, CVSS scores, exploitability metrics, detailed description, and NIST references.
-
-🤖 Automation Schedule
 The pipeline is configured to run automatically via GitHub Actions:
 
-Event Trigger: Automatic execution on push paths targeting target_ip.txt.
+- **Event Trigger:** Automatic execution on `push` paths targeting `target_ip.txt`.
+- **Manual Trigger:** Can be executed anytime via `workflow_dispatch`.
 
-Manual Trigger: Can be executed anytime via workflow_dispatch.
-
-📂 Project Structure
+## 📂 Project Structure
 
 ```
 ├── .github/workflows/
@@ -68,11 +66,9 @@ Manual Trigger: Can be executed anytime via workflow_dispatch.
 └── README.md                      # Project documentation
 ```
 
-👤 Author
-Bruno Ricci
-
-Cybersecurity Specialist | Technical Author
-
-Website: techexpert.tips
-
-LinkedIn: linkedin.com/in/brunoricci/
+## 👤 Author
+**Bruno Ricci, CISSP, OSCP, PMP**  
+*Cybersecurity Specialist | Technical Author*  
+- **Website:** [techexpert.tips](https://techexpert.tips)
+- **LinkedIn:** [linkedin.com/in/brunoricci/](https://www.linkedin.com/in/brunoricci/)
+- **Books:** [Network](https://www.amazon.com.br/Network-Project-HP-Switch-Ricci/dp/153529387X) | [Linux](https://www.amazon.com.br/Slackware-Linux-Pratico-Bruno-Ricci/dp/8573933739) | [Proxy](https://www.amazon.com.br/Squid-Solucao-Definitiva-Nelson-Mendonca/dp/8573935235) | [VPN](https://www.amazon.com.br/Rede-Segura-Linux-Bruno-Ricci/dp/8573935839/) 
