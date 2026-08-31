@@ -40,3 +40,36 @@ jobs:
             git commit -m "Publish automated IP intelligence report"
             git push
           fi
+
+name: Clean Reports Repository
+
+on:
+  workflow_dispatch:
+
+jobs:
+  clean-reports:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Delete All Reports
+        run: |
+          echo "Cleaning existing reports..."
+          rm -rf reports/*.md
+          
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add reports/
+          
+          if git diff --cached --quiet; then
+            echo "No reports to clean."
+          else
+            git commit -m "Clear all existing IP intelligence reports"
+            git push
+          fi
