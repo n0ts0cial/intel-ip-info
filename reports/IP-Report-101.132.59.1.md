@@ -1,0 +1,88 @@
+# IP Intelligence Report: 101.132.59.1
+
+This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data, Shodan asset telemetry, and threat reputation intelligence collected from AbuseIPDB.
+
+| IP ADDRESS | ABUSE CONFIDENCE SCORE |
+| :--- | :--- |
+| 101.132.59.1 | 0% |
+
+---
+## IP Information
+This section details the core geolocation, network routing, and administrative parameters associated with the target infrastructure.
+
+**IP:** 101.132.59.1
+
+**City:** Shanghai
+
+**Region:** Shanghai
+
+**RegionCode:** SH
+
+**CountryName:** China
+
+**CountryCode:** CN
+
+**Postal:** 
+
+**Latitude:** 31.224332
+
+**Longitude:** 121.468951
+
+**Timezone:** Asia/Shanghai
+
+**ContinentCode:** AS
+
+**ASN:** AS37963
+
+**Organization:** Hangzhou Alibaba Advertising Co.,Ltd.
+
+---
+## Abuse Reputation
+This section outlines threat intelligence telemetry, confidence scores, and usage classifications to determine the risk posture of the host.
+
+**IP:** 101.132.59.1
+
+**IsPublic:** True
+
+**IpVersion:** 4
+
+**IsWhitelisted:** False
+
+**ConfidenceScore:** 0%
+
+**UsageType:** Data Center/Web Hosting/Transit
+
+**Isp:** Aliyun Computing Co., LTD
+
+**Domain:** alibabacloud.com
+
+**Hostnames:** 
+
+**IsTor:** False
+
+**TotalReports:** 0
+
+**NumDistinctUsers:** 0
+
+**LastReportedAt:** 
+
+---
+## Shodan Telemetry
+This section outlines open ports, exposed services, operating systems, and network details gathered from Shodan scanning infrastructure.
+
+**IP:** 101.132.59.1
+
+**Ports:** 8192, 1025, 2563, 44617, 8705, 14344, 50007, 12300, 13, 15, 12304, 7000, 1554, 19, 2068, 1557, 4118, 40471, 4120, 14873, 8732, 60129, 9480, 2079, 6688, 2081, 9051, 548, 37, 8230, 29984, 5672, 6697, 554, 13380, 9204, 1800, 3123, 4148, 53, 1080, 12345, 60021, 4157, 8767, 40000, 12128, 18108, 1604, 25782, 14407, 19016, 12361, 9143, 11065, 60960, 80, 593, 15443, 12372, 85, 1110, 8889, 23128, 2404, 9306, 22107, 43102, 28005, 10848, 51235, 5730, 8291, 8805, 102, 104, 18025, 22634, 18027, 7788, 56835, 110, 111, 12912, 8883, 28015, 9998, 9333, 52037, 8553, 632, 7801, 8826, 636, 12138, 44158, 54857, 1153, 50027, 2181, 7302, 139, 8333, 12432, 11288, 4242, 12435, 8340, 19000, 8855, 1177, 666, 5275, 12444, 5277, 12446, 8901, 12144, 16035, 34469, 50777, 16040, 22556, 30892, 9901, 2222, 18095, 179, 10933, 18102, 8036, 4282, 21279, 3260, 32202, 9919, 20000, 11211, 3780, 3269, 12486, 3105, 27836, 2762, 30111, 50892, 16078, 45777, 49443, 55000, 11300, 45786, 9167, 9950, 12000, 16069, 5858, 14054, 8423, 53480, 6379, 9180, 3310, 243, 59550, 12329, 11000, 5007, 27017, 12330, 12542, 6400, 48000, 771, 12548, 35579, 9345, 264, 1801, 48002, 9154, 9999, 30007, 8466, 8467, 789, 20185, 9500, 5918, 18053, 10016, 12336, 4899, 10020, 3365, 49, 9000, 2345, 7979, 10031, 9097, 30002, 30003, 9065, 18099, 12507, 311, 21304, 3124, 10554, 5435, 12439, 21301, 7171, 833, 18245, 43008, 27105, 41800, 3401, 9034, 1355, 20256, 50000, 8248, 12115, 4949, 8022, 9047, 4440, 7001, 1370, 1883, 49501, 7006, 8543, 5984, 8545, 5987, 3268, 8037, 16017, 11112, 873, 8554, 35559, 1388, 19090, 3951, 6000, 6001, 6002, 9761, 47989, 9876, 8574, 9600, 14210, 44419, 33060, 1414, 9025, 8584, 8073, 7050, 9099, 9100, 12173, 37777, 1935, 20880, 5009, 5010, 2628, 10134, 8087, 1433, 8091, 6556, 18105, 4000, 6561, 8099, 12199, 12200, 18802, 60334, 1455, 9137, 35251, 50100, 49684, 8009, 3001, 49692, 1979, 444, 1981, 10909, 8130, 843, 8079, 9633, 9160, 11210, 6603, 8142, 8143, 2000, 61613, 2002, 9172, 2008, 9179, 5596, 12255, 992, 993, 3554, 12259, 18368, 5201, 47080, 8169, 12172, 2030, 48112, 55555, 3060, 55550, 4602, 32764, 8189, 8702, 8789
+
+**Hostnames:** N/A
+
+**OS:** N/A
+
+**Vulnerabilities:** CVE-2026-59996, CVE-2026-59997, CVE-2026-59995, CVE-2015-6563, CVE-2026-59998, CVE-2026-59999, CVE-2015-6564, CVE-2016-0777, CVE-2026-60000, CVE-2026-60001, CVE-2026-60002, CVE-2007-2768, CVE-2016-20012, CVE-2019-16905, CVE-2014-2653, CVE-2024-6387, CVE-2014-2532, CVE-2011-5000, CVE-2026-35414, CVE-2025-26465, CVE-2014-1692, CVE-2017-15906, CVE-2020-14145, CVE-2025-23419, CVE-2012-0814, CVE-2023-38408, CVE-2019-6111, CVE-2019-6110, CVE-2016-3115, CVE-2015-5352, CVE-2016-10009, CVE-2018-20685, CVE-2010-5107, CVE-2016-10012, CVE-2025-32728, CVE-2018-15473, CVE-2021-41617, CVE-2020-15778, CVE-2016-10708, CVE-2026-35387, CVE-2011-4327, CVE-2018-15919, CVE-2026-35388, CVE-2023-44487, CVE-2026-35385, CVE-2023-51385, CVE-2008-3844, CVE-2015-5600, CVE-2016-1908, CVE-2023-51767, CVE-2010-4478, CVE-2023-48795, CVE-2016-10011, CVE-2016-10010, CVE-2021-36368, CVE-2010-4755, CVE-2019-6109
+
+**Organization:** Aliyun Computing Co., LTD
+
+**ISP:** Hangzhou Alibaba Advertising Co.,Ltd.
+
+**LastUpdate:** 08/31/2026 21:55:12
+
