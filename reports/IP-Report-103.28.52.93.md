@@ -1,10 +1,10 @@
 # IP Intelligence Report: 103.28.52.93
 
-This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data with threat reputation intelligence collected from AbuseIPDB.
+This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data, Shodan asset telemetry, and threat reputation intelligence collected from AbuseIPDB.
 
 | IP ADDRESS | ABUSE CONFIDENCE SCORE |
 | :--- | :--- |
-| 103.28.52.93 | 9% |
+| 103.28.52.93 | 8% |
 
 ---
 ## IP Information
@@ -42,29 +42,29 @@ This section outlines threat intelligence telemetry, confidence scores, and usag
 
 **IP:** 103.28.52.93
 
-**AbuseIsPublic:** True
+**IsPublic:** True
 
-**AbuseIpVersion:** 4
+**IpVersion:** 4
 
-**AbuseIsWhitelisted:** False
+**IsWhitelisted:** False
 
-**AbuseConfidenceScore:** 9%
+**ConfidenceScore:** 8%
 
-**AbuseUsageType:** Data Center/Web Hosting/Transit
+**UsageType:** Data Center/Web Hosting/Transit
 
-**AbuseIsp:** PT Cloud Hosting Indonesia
+**Isp:** PT Cloud Hosting Indonesia
 
-**AbuseDomain:** cloudhost.web.id
+**Domain:** cloudhost.web.id
 
-**AbuseHostnames:** ip103-28-52-93.cloudhost.web.id
+**Hostnames:** ip103-28-52-93.cloudhost.web.id
 
-**AbuseIsTor:** True
+**IsTor:** False
 
-**AbuseTotalReports:** 2
+**TotalReports:** 2
 
-**AbuseNumDistinctUsers:** 2
+**NumDistinctUsers:** 2
 
-**AbuseLastReportedAt:** 08/18/2026 22:00:15
+**LastReportedAt:** 08/18/2026 22:00:15
 
 ---
 ## Abuse Reports
