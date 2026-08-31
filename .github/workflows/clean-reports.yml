@@ -14,10 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
 
-      - name: Delete All Reports
+      - name: Delete All Report Files
         run: |
-          echo "Cleaning existing reports..."
-          rm -rf reports/*.md
+          echo "Cleaning existing report files..."
+          # Remove apenas os arquivos .md dentro de reports, mantendo a pasta intacta
+          find reports/ -name "*.md" -type f -delete
           
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
