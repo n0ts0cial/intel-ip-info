@@ -2,6 +2,11 @@ name: Run IP Intelligence Check
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'target_ip.txt'
 
 jobs:
   run-script:
