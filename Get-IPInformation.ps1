@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Retrieves IP address information from target_ip.txt, full reputation details using ipapi.co and AbuseIPDB services, and optional Shodan telemetry including vulnerabilities, with robust error handling, and generates a structured Markdown report.
+    Retrieves IP address information from target_ip.txt, full reputation details using ipapi.co and AbuseIPDB services, and optional Shodan telemetry enriched via NIST NVD API, with robust error handling, and generates a structured Markdown report.
 .PARAMETER AbuseIPDBKey
     Your AbuseIPDB API key.
 .PARAMETER ShodanKey
@@ -50,6 +50,103 @@ function Get-TargetIPAddress {
 
     Write-Host "Target IP validated successfully from file: $IPAddress" -ForegroundColor Cyan
     return $IPAddress
+}
+
+# Function to enrich CVE lists using the NIST NVD API with batching and rate limiting
+function Process-NistEnrichment {
+    param ([string[]]$CveIds)
+
+    if ($null -eq $CveIds -or $CveIds.Count -eq 0) {
+        return @()
+    }
+
+    $BatchSize = 40
+    $NistDataList = [System.Collections.Generic.List[object]]::new()
+    $TotalBatches = [Math]::Ceiling($CveIds.Count / $BatchSize)
+
+    Write-Host "INFO: Starting NIST NVD enrichment -- $($CveIds.Count) CVEs across $TotalBatches batch(es)." -ForegroundColor Cyan
+
+    for ($i = 0; $i -lt $CveIds.Count; $i += $BatchSize) {
+        $BatchIds = $CveIds[$i .. [Math]::Min($i + $BatchSize - 1, $CveIds.Count - 1)]
+        $BatchNumber = [Math]::Floor($i / $BatchSize) + 1
+
+        Write-Host "INFO: Querying NIST NVD -- batch $BatchNumber of $TotalBatches ($($BatchIds.Count) CVEs)..." -ForegroundColor Cyan
+
+        $CveIdsString = $BatchIds -join ","
+        $ApiUrl = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveIds=$CveIdsString"
+
+        try {
+            $NistResponse = Invoke-RestMethod -Uri $ApiUrl -Method Get -TimeoutSec 60 -ErrorAction Stop
+
+            if ($NistResponse.vulnerabilities) {
+                $NistDataList.AddRange($NistResponse.vulnerabilities)
+            }
+
+            if ($BatchNumber -lt $TotalBatches) {
+                Write-Host "INFO: Pausing 7 seconds to respect NIST rate limits..." -ForegroundColor DarkGray
+                Start-Sleep -Seconds 7
+            }
+        }
+        catch {
+            Write-Warning "NIST API issue on batch $BatchNumber of $TotalBatches. Details: $_"
+        }
+    }
+
+    $enrichedVulns = [System.Collections.Generic.List[PSCustomObject]]::new()
+
+    foreach ($cveId in $CveIds) {
+        $NistMatch = $NistDataList | Where-Object { $_.cve.id -eq $cveId }
+
+        $baseSeverity = "UNKNOWN"
+        $baseScore = "N/A"
+        $exploitabilityScore = "N/A"
+        $impactScore = "N/A"
+        $description = "No detailed description available from NIST NVD."
+        $references = "N/A"
+
+        if ($NistMatch) {
+            $Cve = $NistMatch.cve
+
+            $engDesc = $Cve.descriptions | Where-Object { $_.lang -eq "en" } | Select-Object -ExpandProperty value -First 1
+            if (-not [string]::IsNullOrEmpty($engDesc)) {
+                $description = $engDesc
+            }
+
+            $Cvss = $null
+            if ($Cve.metrics.cvssMetricV31) { $Cvss = $Cve.metrics.cvssMetricV31[0] }
+            elseif ($Cve.metrics.cvssMetricV30) { $Cvss = $Cve.metrics.cvssMetricV30[0] }
+
+            if ($null -ne $Cvss) {
+                $baseScore = $Cvss.cvssData.baseScore
+                $baseSeverity = $Cvss.cvssData.baseSeverity
+                $exploitabilityScore = $Cvss.exploitabilityScore
+                $impactScore = $Cvss.impactScore
+            }
+
+            if ($Cve.references) {
+                $references = ($Cve.references.url -join " | ")
+            }
+        }
+
+        # Check references tags for public exploit proof-of-concept indicators
+        $hasPublicExploit = "No"
+        if ($NistMatch -and $NistMatch.cve.references.tags -contains "Exploit") {
+            $hasPublicExploit = "Yes"
+        }
+
+        $enrichedVulns.Add([PSCustomObject]@{
+            CveId               = $cveId
+            BaseSeverity        = $baseSeverity
+            BaseScore           = $baseScore
+            ExploitabilityScore = $exploitabilityScore
+            ImpactScore         = $impactScore
+            HasPublicExploit    = $hasPublicExploit
+            Description         = $description
+            References          = $references
+        })
+    }
+
+    return $enrichedVulns
 }
 
 try {
@@ -134,16 +231,26 @@ try {
     $shodanHostnamesFormatted = if ($null -ne $shodanData.hostnames -and $shodanData.hostnames.Count -gt 0) { $shodanData.hostnames -join ', ' } else { "N/A" }
     $shodanOsFormatted = if ($null -ne $shodanData.os) { $shodanData.os } else { "N/A" }
     
-    # Process Shodan Vulnerabilities
+    # Process and extract Shodan Vulnerabilities Array and string representation
+    $rawCveList = @()
     $shodanVulnsFormatted = "N/A"
     if ($null -ne $shodanData.vulns) {
         if ($shodanData.vulns -is [array]) {
-            $shodanVulnsFormatted = $shodanData.vulns -join ', '
+            $rawCveList = @($shodanData.vulns)
         } elseif ($shodanData.vulns -is [PSCustomObject] -or $shodanData.vulns -is [Hashtable]) {
-            $shodanVulnsFormatted = ($shodanData.vulns.psobject.properties.name) -join ', '
+            $rawCveList = @($shodanData.vulns.psobject.properties.name)
         } else {
-            $shodanVulnsFormatted = [string]$shodanData.vulns
+            $rawCveList = @([string]$shodanData.vulns)
         }
+        if ($rawCveList.Count -gt 0) {
+            $shodanVulnsFormatted = "Vulnerabilities: " + ($rawCveList -join ", ")
+        }
+    }
+
+    # Enrich vulnerabilities using NIST NVD API
+    $enrichedVulnerabilities = @()
+    if ($rawCveList.Count -gt 0) {
+        $enrichedVulnerabilities = Process-NistEnrichment -CveIds $rawCveList
     }
 
     $ipInfo = [PSCustomObject]@{
@@ -183,10 +290,10 @@ try {
         Ports           = $shodanPortsFormatted
         Hostnames       = $shodanHostnamesFormatted
         OS              = $shodanOsFormatted
-        Vulnerabilities = $shodanVulnsFormatted
         Organization    = if ($null -ne $shodanData.org) { $shodanData.org } else { "N/A" }
         ISP             = if ($null -ne $shodanData.isp) { $shodanData.isp } else { "N/A" }
         LastUpdate      = if ($null -ne $shodanData.last_update) { $shodanData.last_update } else { "N/A" }
+        Vulnerabilities = $shodanVulnsFormatted
     }
 
     $reportsArray = if ($abuseData.reports) {
@@ -215,6 +322,16 @@ try {
     if ($shodanHasValidData) {
         Write-Host "=== SHODAN TELEMETRY ===" -ForegroundColor Cyan
         $shodanTelemetry | Format-List
+
+        if ($enrichedVulnerabilities.Count -gt 0) {
+            Write-Host "=== VULNERABILITIES (NIST ENRICHED) ===" -ForegroundColor Cyan
+            foreach ($vuln in $enrichedVulnerabilities) {
+                Write-Host "CVE ID: $($vuln.CveId)" -ForegroundColor Yellow
+                Write-Host "Severity: $($vuln.BaseSeverity) | Base Score: $($vuln.BaseScore)" -ForegroundColor White
+                Write-Host "Description: $($vuln.Description)" -ForegroundColor Gray
+                Write-Host ""
+            }
+        }
     }
 
     if ($reportsArray.Count -gt 0) {
@@ -236,7 +353,7 @@ try {
         
         $Content.Add("# IP Intelligence Report: $targetIp")
         $Content.Add("")
-        $Content.Add("This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data, Shodan asset telemetry, and threat reputation intelligence collected from AbuseIPDB.")
+        $Content.Add("This report provides a comprehensive analysis of the specified target IP address, combining infrastructure geolocation data, Shodan asset telemetry, NIST-enriched vulnerability insights, and threat reputation intelligence collected from AbuseIPDB.")
         $Content.Add("")
         $Content.Add("| IP ADDRESS | ABUSE CONFIDENCE SCORE |")
         $Content.Add("| :--- | :--- |")
@@ -291,6 +408,51 @@ try {
             foreach ($prop in $shodanTelemetry.PSObject.Properties) {
                 $Content.Add("**$($prop.Name):** $($prop.Value)")
                 $Content.Add("")
+            }
+
+            # Enriched Vulnerabilities Section with Vulnerabilities Summary Table
+            if ($enrichedVulnerabilities.Count -gt 0) {
+                $TotalCount    = @($enrichedVulnerabilities).Count
+                $CriticalCount = @($enrichedVulnerabilities | Where-Object { $_.BaseSeverity -eq "CRITICAL" }).Count
+                $HighCount     = @($enrichedVulnerabilities | Where-Object { $_.BaseSeverity -eq "HIGH"     }).Count
+                $MediumCount   = @($enrichedVulnerabilities | Where-Object { $_.BaseSeverity -eq "MEDIUM"   }).Count
+                $LowCount      = @($enrichedVulnerabilities | Where-Object { $_.BaseSeverity -eq "LOW"      }).Count
+                $PocCount      = @($enrichedVulnerabilities | Where-Object { $_.HasPublicExploit -eq "Yes"  }).Count
+
+                $Content.Add("---")
+                $Content.Add("### Vulnerabilities Summary")
+                $Content.Add("This section provides a high-level overview of the vulnerabilities recently identified and added to the Shodan asset profile, enriched via NIST NVD.")
+                $Content.Add("")
+                $Content.Add("| Metric | Value |")
+                $Content.Add("| :--- | :--- |")
+                $Content.Add("| **Total Vulnerabilities** | $TotalCount |")
+                $Content.Add("| **Critical Severity** | $CriticalCount |")
+                $Content.Add("| **High Severity** | $HighCount |")
+                $Content.Add("| **Medium Severity** | $MediumCount |")
+                $Content.Add("| **Low Severity** | $LowCount |")
+                $Content.Add("| **Public Exploit (PoC) Available** | $PocCount |")
+                $Content.Add("")
+
+                $Content.Add("### Vulnerabilities")
+                $Content.Add("This section presents detailed telemetry and descriptions for each vulnerability associated with the target asset, enriched via the NIST NVD API.")
+                $Content.Add("")
+                foreach ($vuln in $enrichedVulnerabilities) {
+                    $Content.Add("---")
+                    $Content.Add("#### CVE ID: $($vuln.CveId)")
+                    $Content.Add("")
+                    $Content.Add("**Base Severity:** $($vuln.BaseSeverity)")
+                    $Content.Add("")
+                    $Content.Add("**Base Score:** $($vuln.BaseScore)")
+                    $Content.Add("")
+                    $Content.Add("**Exploitability Score:** $($vuln.ExploitabilityScore)")
+                    $Content.Add("")
+                    $Content.Add("**Impact Score:** $($vuln.ImpactScore)")
+                    $Content.Add("")
+                    $Content.Add("**Description:** $($vuln.Description)")
+                    $Content.Add("")
+                    $Content.Add("**References:** $($vuln.References)")
+                    $Content.Add("")
+                }
             }
         }
 
