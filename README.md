@@ -1,6 +1,6 @@
 # Intel IP Info 🛡️
 
-Automated Threat Intelligence pipeline that monitors target IP addresses (IPv4/IPv6), aggregates threat reputation, scans asset infrastructure, and reports on vulnerabilities.
+Automated Threat Intelligence pipeline that queries existing telemetry for target IP addresses (IPv4/IPv6), aggregates threat reputation, retrieves indexed asset data, and reports on vulnerabilities.
 
 ## 🚀 Overview
 
@@ -9,7 +9,7 @@ This project provides an automated intelligence workflow for target IP analysis.
 1. **Reads** the target IPv4 or IPv6 address from `target_ip.txt`.
 2. **Queries** infrastructure geolocation and routing data via `ipapi.co`.
 3. **Retrieves** threat reputation scores and usage classifications from `AbuseIPDB`.
-4. **Scans** asset ports, services, and associated vulnerabilities via `Shodan`.
+4. **Retrieves** asset ports, services, and associated vulnerabilities from `Shodan` intelligence data.
 5. **Enriches** vulnerability data by querying the **NIST National Vulnerability Database (NVD) API** to extract CVSS base scores, severities, impact metrics, and public exploit (PoC) indicators.
 6. **Generates** clean Markdown reports in the `reports/` directory featuring a **Vulnerabilities Summary** and technical findings.
 
