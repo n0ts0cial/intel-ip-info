@@ -59,11 +59,12 @@ The pipeline is configured to run automatically via GitHub Actions:
 
 ```
 ├── .github/workflows/
-│   └── check-ip-intelligence.yml  # GitHub Actions CI/CD configuration
-├── reports/                       # History of generated IP intelligence reports
-├── target_ip.txt                  # Target IPv4/IPv6 address input file
-├── Get-IPInformation.ps1          # Main PowerShell analysis script
-└── README.md                      # Project documentation
+│   ├── ip-check.yml        # Main IP intelligence CI/CD automation workflow
+│   └── clean-reports.yml   # Maintenance workflow to clear report history
+├── reports/                # History of generated IP intelligence reports
+├── target_ip.txt           # Target IPv4/IPv6 address input file
+├── Get-IPInformation.ps1   # Main PowerShell analysis script
+└── README.md               # Project documentation
 ```
 
 ## 👤 Author
