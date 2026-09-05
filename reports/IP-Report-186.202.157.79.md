@@ -74,7 +74,7 @@ This section outlines open ports, exposed services, operating systems, and netwo
 
 **Ports:** 80, 443
 
-**Hostnames:** saladeimprensa-sud.org.br, locaweb.com.br, cart.invepar.com.br
+**Hostnames:** locaweb.com.br, weinkeller.com.br, mcmindustrial.com.br
 
 **OS:** N/A
 
@@ -82,7 +82,7 @@ This section outlines open ports, exposed services, operating systems, and netwo
 
 **ISP:** Locaweb Serviços de Internet S/A
 
-**LastUpdate:** 09/02/2026 09:52:18
+**LastUpdate:** 09/04/2026 18:52:07
 
 **Vulnerabilities:** Vulnerabilities: CVE-2023-44487, CVE-2019-9516, CVE-2025-23419, CVE-2019-9513, CVE-2019-9511, CVE-2021-23017, CVE-2021-3618, CVE-2019-20372, CVE-2018-16845
 
